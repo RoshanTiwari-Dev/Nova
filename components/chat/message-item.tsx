@@ -53,14 +53,17 @@ export function MessageItem({
   const isUser = role === "user";
 
   // Parse follow-up chips if present in assistant response
-  let cleanContent = content;
+  let cleanContent = content
+    .replace(/^f:\{"messageId":.*?\}/m, "")
+    .replace(/^\{"messageId":.*?\}/m, "")
+    .trim();
   let parsedSuggestions: string[] = [];
 
   const suggestionMatch = content.match(/<!-- SUGGESTIONS: (.*?) -->/);
   if (suggestionMatch) {
     try {
       parsedSuggestions = JSON.parse(suggestionMatch[1]);
-      cleanContent = content.replace(suggestionMatch[0], "").trim();
+      cleanContent = cleanContent.replace(suggestionMatch[0], "").trim();
     } catch {
       // ignore
     }
@@ -69,9 +72,9 @@ export function MessageItem({
   // Provide fallback chips for late turns if none returned
   if (!isUser && parsedSuggestions.length === 0 && isLatest) {
     parsedSuggestions = [
-      "Can you optimize this code further?",
-      "Add unit tests for edge cases",
-      "Explain the asymptotic time and space complexity",
+      "Tell me more about this",
+      "Give me an example",
+      "What are the key takeaways?",
     ];
   }
 

@@ -57,7 +57,7 @@ export function ChatView({
   const [isLoading, setIsLoading] = React.useState(false);
   const [abortController, setAbortController] = React.useState<AbortController | null>(null);
 
-  const [selectedModel, setSelectedModel] = React.useState("gpt-4o-mini");
+  const [selectedModel, setSelectedModel] = React.useState("openai/gpt-oss-120b");
   const [responseStyle, setResponseStyle] = React.useState<
     "concise" | "detailed" | "beginner" | "advanced"
   >("detailed");
@@ -186,36 +186,56 @@ export function ChatView({
       ]);
 
       if (reader) {
+        let buffer = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          // Keep incomplete line in buffer for the next chunk
+          buffer = lines.pop() || "";
+
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+
             if (line.startsWith("0:")) {
               try {
                 const token = JSON.parse(line.slice(2));
                 assistantText += token;
               } catch {
-                assistantText += line.slice(2);
+                assistantText += line.slice(2).replace(/^"(.*)"$/, "$1");
               }
             } else if (line.startsWith("3:")) {
               try {
                 const errMsg = JSON.parse(line.slice(2));
                 if (errMsg.includes("no credits remaining") || errMsg.includes("billing")) {
-                  assistantText = `⚠️ **OpenAI Billing Notice:** Your OpenAI API account has no credits remaining ($0 balance).\n\nTo use OpenAI, add \$5 credit at [platform.openai.com/settings/organization/billing/](https://platform.openai.com/settings/organization/billing/).\n\n> [!TIP]\n> **Want it 100% free?** Get a free Google Gemini key from [aistudio.google.com](https://aistudio.google.com/) and add it to \`.env.local\` as \`GOOGLE_GENERATIVE_AI_API_KEY\`.`;
+                  assistantText = `⚠️ **OpenAI Billing Notice:** Your OpenAI API account has no credits remaining ($0 balance).\n\n> [!TIP]\n> **Groq is 100% Free:** Groq is active and running with zero cost!`;
                 } else {
                   assistantText = `⚠️ **AI Service Notice:** ${errMsg}`;
                 }
               } catch {
                 assistantText = `⚠️ **AI Service Notice:** ${line.slice(2)}`;
               }
-            } else if (line.trim() && !line.startsWith("d:") && !line.startsWith("e:")) {
-              assistantText += line;
             }
+            // All other prefixes like f: (messageId), d: (finish metadata), e: (usage metadata) are ignored
           }
 
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId ? { ...msg, content: assistantText } : msg
+            )
+          );
+        }
+
+        if (buffer.trim().startsWith("0:")) {
+          try {
+            const token = JSON.parse(buffer.trim().slice(2));
+            assistantText += token;
+          } catch {
+            assistantText += buffer.trim().slice(2).replace(/^"(.*)"$/, "$1");
+          }
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantId ? { ...msg, content: assistantText } : msg

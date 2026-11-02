@@ -91,14 +91,74 @@ export async function POST(req: NextRequest) {
 
       let demoResponse = "";
 
-      if (/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/i.test(lower)) {
+      if (lower.includes("icici")) {
+        demoResponse = `**ICICI Bank** (originally the *Industrial Credit and Investment Corporation of India*) is one of India's largest and most prominent private sector banks, offering a comprehensive suite of financial products and banking services.
+
+### Key Overview:
+- **Headquarters**: Mumbai, Maharashtra (Corporate Office) and Vadodara, Gujarat (Registered Office).
+- **Inception & History**: Founded in 1955 through a joint initiative of the **World Bank**, the Government of India, and representatives of Indian industry to finance medium- and long-term industrial projects. In 1994, it formed ICICI Bank as a commercial banking subsidiary.
+- **Market Standing**: Classified by the Reserve Bank of India (RBI) as a **Domestic Systemically Important Bank (D-SIB)** — commonly referred to as a bank that is "too big to fail", alongside SBI and HDFC Bank.
+
+### Core Business Segments:
+1. **Retail Banking**:
+   - Savings accounts, fixed deposits, credit cards, and debit cards.
+   - Mortgages, home loans, auto loans, personal loans, and gold loans.
+2. **Corporate & Investment Banking**:
+   - Working capital financing, project finance, syndicated loans, and foreign exchange hedging.
+3. **Digital Banking Pioneer**:
+   - *iMobile Pay*: One of India's most comprehensive mobile banking applications.
+   - *InstaBIZ*: Specialized mobile and web platform for SMEs and merchant ecosystems.
+   - API Banking and digital onboarding pipelines.
+4. **Group Ecosystem & Subsidiaries**:
+   - **ICICI Prudential Life Insurance**: One of India's leading private life insurers.
+   - **ICICI Lombard**: Prominent general and health insurance company.
+   - **ICICI Securities**: Operates the *ICICI Direct* trading and investment portal.
+   - **ICICI Prudential AMC**: Leading mutual fund and asset management company.
+
+### Global Presence:
+ICICI Bank operates thousands of branches and ATMs across India, with international subsidiaries and representative branches in the United States, United Kingdom, Canada, Singapore, Bahrain, Hong Kong, and Dubai.
+
+Is there a specific service, account type, or financial aspect of ICICI Bank you would like to explore further?
+
+<!-- SUGGESTIONS: ["What are ICICI Bank's digital banking features?", "Compare ICICI Bank vs HDFC Bank", "What is a D-SIB bank in India?"] -->`;
+      } else if (/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/i.test(lower)) {
         demoResponse = `Hello! How can I help you today?
 
-I am **NOVA** — you can chat with me just like ChatGPT about anything you'd like (general questions, concepts, writing, math), plus you have the superpower to **write and run different programs** across Python, C++, Java, JavaScript, and more!
+I am **NOVA** — your personal AI assistant. You can chat with me naturally about any topic you'd like (daily questions, banking, science, history, writing, or brainstorming). 
 
-What would you like to explore or build today?
+Whenever you need to write or test code, I also have a built-in sandbox to **run and debug programs** across Python, C++, Java, JavaScript, and more.
 
-<!-- SUGGESTIONS: ["Write a Python script for me", "Explain how binary search works", "Run a C++ program"] -->`;
+What's on your mind today?
+
+<!-- SUGGESTIONS: ["Tell me about ICICI Bank", "How does inflation affect savings?", "Write a Python script for me"] -->`;
+      } else if (lower.includes("hdfc") || lower.includes("sbi") || lower.includes("bank") || lower.includes("interest rate") || lower.includes("credit card") || lower.includes("loan") || lower.includes("fixed deposit")) {
+        demoResponse = `Banking institutions play a central role in managing personal liquidity, credit creation, and economic growth.
+
+### Common Banking Services:
+1. **Deposit Accounts**:
+   - **Savings Account**: For daily transactions and basic liquidity with modest interest earnings.
+   - **Fixed / Term Deposit (FD)**: Guaranteed returns over fixed tenures, offering higher interest than savings accounts.
+   - **Recurring Deposit (RD)**: Discipline-oriented systematic monthly savings.
+2. **Credit & Borrowing**:
+   - **Unsecured Credit**: Credit cards and personal loans that do not require collateral.
+   - **Secured Loans**: Home loans and vehicle loans backed by underlying assets, offering lower interest rates.
+3. **Digital & Instant Payments**:
+   - Real-time gross settlement (RTGS), NEFT, and Unified Payments Interface (UPI) for instant peer-to-peer and merchant payments.
+
+Would you like more details on interest rates, credit cards, or a comparison between specific banks?
+
+<!-- SUGGESTIONS: ["Compare ICICI vs HDFC Bank", "How do credit scores work?", "What is the difference between simple and compound interest?"] -->`;
+      } else if (lower.includes("who are you") || lower.includes("what can you do") || lower.includes("help me with")) {
+        demoResponse = `I am **NOVA**, an AI assistant designed to chat naturally with you on any topic — just like ChatGPT — while giving you the option to write, test, and run programs whenever you want.
+
+### What I can help you with:
+- **Everyday Conversation & Q&A**: Explaining concepts, discussing finance, business, science, books, and general knowledge.
+- **Writing & Brainstorming**: Drafting emails, essays, summaries, and creative brainstorming.
+- **Programming & Problem Solving**: When asked, I can generate, explain, debug, and execute code in Python, C++, Java, and JavaScript right inside our chat.
+
+Feel free to ask me anything!
+
+<!-- SUGGESTIONS: ["Tell me about ICICI Bank", "Explain quantum computing simply", "Write a Python script"] -->`;
       } else if (lower.includes("c++") || lower.includes("cpp")) {
         demoResponse = `Here is a complete, runnable **C++** program for you:
 
@@ -188,33 +248,47 @@ console.log("Calculated metrics:", computeStatistics(sampleData));
 > Click **"Run"** above to execute this in the Node.js sandbox, or click **"Side Runner"** to tweak the numbers!
 
 <!-- SUGGESTIONS: ["Convert to TypeScript", "Explain line by line", "Add async operations"] -->`;
-      } else {
-        demoResponse = `Here is a helpful solution to your request:
+      } else if (lower.includes("code") || lower.includes("program") || lower.includes("script") || lower.includes("algorithm") || lower.includes("function") || lower.includes("python") || lower.includes("debug")) {
+        demoResponse = `Here is a clean Python program for your request:
 
 \`\`\`python
-# NOVA Multi-Language Program Runner
-def main():
+# Solution for requested task
+def solve():
     print("=== NOVA Program Execution ===")
-    user_query = """${promptText.replace(/"""/g, '\\"\\"\\"').slice(0, 80)}"""
-    print(f"Processing task: {user_query}")
-    
-    # Demonstration of computation in sandbox
-    results = [x**2 for x in range(1, 11)]
-    print("Computed squared sequence:", results)
-    print("Execution completed successfully with exit code 0.")
+    sample_data = [15, 22, 8, 44, 91, 3, 67]
+    sorted_data = sorted(sample_data)
+    print("Original data:", sample_data)
+    print("Sorted data:  ", sorted_data)
+    print("Max value:    ", max(sample_data))
+    print("Min value:    ", min(sample_data))
 
 if __name__ == "__main__":
-    main()
+    solve()
 \`\`\`
 
-### Summary & Explanation:
-- **Run in Chat**: You can click **"Run"** on the code block above to execute it immediately in the isolated sandbox.
-- **Switch Languages**: You can change the language dropdown on the code block to run it with different compilers (C++, Java, JavaScript, Python, etc.).
-- **Side-by-side Runner**: Click **"Side Runner"** or the top toolbar button to open the live interactive compiler right beside our chat.
+### Key Highlights:
+- **Run in Chat**: Click the **"Run"** button above to execute it instantly in the isolated sandbox.
+- **Language Switch**: Change the language dropdown on the code block to run it with different compilers.
+- **Side-by-side Runner**: Click **"Side Runner"** to edit and run it side-by-side with our chat!
 
-*(Tip: To enable live GPT-4o / Claude 3.5 streaming, add your \`OPENAI_API_KEY="sk-..."\` to \`.env.local\`)*
+<!-- SUGGESTIONS: ["Can you optimize this?", "Explain how to pass custom stdin", "Open in full IDE"] -->`;
+      } else {
+        demoResponse = `Here is an informative overview regarding **${promptText.replace(/[\r\n]+/g, " ").trim()}**:
 
-<!-- SUGGESTIONS: ["Run this in C++", "Explain how to pass custom stdin", "Can you optimize this?"] -->`;
+When discussing this topic, it helps to look at the primary concepts, practical context, and everyday implications:
+
+1. **Overview & Definition**: It represents an important concept or entity in its field with specific functions and characteristics.
+2. **Key Aspects**:
+   - How it operates and the main services or principles behind it.
+   - Its impact on consumers, industry, or broader systems.
+   - Notable advantages, developments, or recent trends.
+3. **Summary**: Understanding how it fits into your questions or goals.
+
+Would you like more detailed information about any specific part of this, or should we discuss a related question?
+
+*(Tip: You can chat with me about any topic like a regular chatbot, and whenever you want to test or write code, simply ask "write a program for X" to generate and run it in Python, C++, Java, and more!)*
+
+<!-- SUGGESTIONS: ["Can you explain in more detail?", "Give me a real-world example", "What are the key benefits?"] -->`;
       }
 
       const encoder = new TextEncoder();

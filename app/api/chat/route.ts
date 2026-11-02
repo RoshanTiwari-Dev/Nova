@@ -58,18 +58,27 @@ export async function POST(req: NextRequest) {
 
     const { conversationId, messages: incomingMessages, model, webSearch } = parsed.data;
 
-    // Fetch user preferences
-    const user = await getUserById(userId);
-    const prefs = user?.preferences || {};
+    // Fetch user preferences safely without failing if database is offline
+    let prefs: any = {};
+    try {
+      const user = await getUserById(userId);
+      prefs = user?.preferences || {};
+    } catch {
+      // ignore
+    }
 
     // Get last user message
     const latestUserMsg = incomingMessages[incomingMessages.length - 1];
     if (latestUserMsg && latestUserMsg.role === "user") {
-      await saveMessage({
-        conversationId,
-        role: "user",
-        parts: [{ type: "text", text: latestUserMsg.content }],
-      });
+      try {
+        await saveMessage({
+          conversationId,
+          role: "user",
+          parts: [{ type: "text", text: latestUserMsg.content }],
+        });
+      } catch {
+        // ignore
+      }
     }
 
     const systemPrompt = buildSystemPrompt({
@@ -79,6 +88,8 @@ export async function POST(req: NextRequest) {
     });
 
     const hasApiKey = Boolean(
+      (env.GROQ_API_KEY && env.GROQ_API_KEY.startsWith("gsk_")) ||
+      (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith("gsk_")) ||
       (env.OPENAI_API_KEY && env.OPENAI_API_KEY.startsWith("sk-")) ||
       (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith("sk-")) ||
       (env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-")) ||
@@ -376,7 +387,12 @@ Would you like more detailed information about any specific part of this, or sho
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toDataStreamResponse({
+      getErrorMessage: (streamErr: any) => {
+        console.error("AI stream error detail:", streamErr);
+        return streamErr?.message || "An error occurred with the AI provider.";
+      },
+    });
   } catch (err: any) {
     console.error("Chat streaming route error:", err);
     return NextResponse.json(

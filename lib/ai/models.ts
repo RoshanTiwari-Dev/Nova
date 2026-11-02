@@ -9,8 +9,16 @@ const openaiApiKey =
 const googleApiKey =
   env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
 
+const groqApiKey =
+  env.GROQ_API_KEY || process.env.GROQ_API_KEY || "";
+
 export const openai = createOpenAI({
   apiKey: openaiApiKey || "sk-dummy-key-for-initialization",
+});
+
+export const groq = createOpenAI({
+  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: groqApiKey || "gsk-dummy-key",
 });
 
 export const anthropic = createAnthropic({
@@ -24,12 +32,26 @@ export const google = createGoogleGenerativeAI({
 export interface ModelDescriptor {
   id: string;
   name: string;
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "groq";
   tier: "fast" | "smart";
   description: string;
 }
 
 export const AVAILABLE_MODELS: ModelDescriptor[] = [
+  {
+    id: "llama-3.3-70b-versatile",
+    name: "Llama 3.3 70B (Groq Free)",
+    provider: "groq",
+    tier: "smart",
+    description: "Ultra-fast, state-of-the-art open model with instant responses",
+  },
+  {
+    id: "llama-3.1-8b-instant",
+    name: "Llama 3.1 8B (Groq Free)",
+    provider: "groq",
+    tier: "fast",
+    description: "Lightning-fast inference at 500+ tokens per second",
+  },
   {
     id: "gpt-4o-mini",
     name: "GPT-4o Mini",
@@ -90,14 +112,16 @@ export function getAllowedModels(): ModelDescriptor[] {
 }
 
 export function getModelInstance(modelId?: string) {
-  // If user has only Google or only Anthropic configured, adapt automatically
-  const hasOpenAi = Boolean(openaiApiKey && openaiApiKey.startsWith("sk-"));
+  const hasGroq = Boolean(groqApiKey && groqApiKey.startsWith("gsk_"));
+  const hasOpenAi = Boolean(openaiApiKey && openaiApiKey.startsWith("sk-") && !hasGroq);
   const hasGoogle = Boolean(googleApiKey && googleApiKey.length > 5);
   const hasAnthropic = Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-"));
 
   let targetId = modelId || env.AI_MODEL_FAST || "gpt-4o-mini";
 
-  if (!hasOpenAi && hasGoogle && !targetId.includes("gemini")) {
+  if (hasGroq && (!modelId || modelId.startsWith("gpt") || modelId.startsWith("claude"))) {
+    targetId = "llama-3.3-70b-versatile";
+  } else if (!hasOpenAi && hasGoogle && !targetId.includes("gemini")) {
     targetId = "gemini-1.5-flash";
   } else if (!hasOpenAi && hasAnthropic && !targetId.includes("claude")) {
     targetId = "claude-3-5-haiku-20241022";
@@ -106,6 +130,8 @@ export function getModelInstance(modelId?: string) {
   const descriptor = AVAILABLE_MODELS.find((m) => m.id === targetId) || AVAILABLE_MODELS[0];
 
   switch (descriptor.provider) {
+    case "groq":
+      return groq(descriptor.id);
     case "anthropic":
       return anthropic(descriptor.id);
     case "google":

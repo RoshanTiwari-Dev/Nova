@@ -12,6 +12,7 @@ const serverSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
   
   AI_MODEL_FAST: z.string().default("gpt-4o-mini"),
   AI_MODEL_SMART: z.string().default("gpt-4o"),

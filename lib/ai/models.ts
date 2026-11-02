@@ -3,11 +3,14 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { env } from "@/lib/env";
 
+const openaiApiKey =
+  env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || "";
+
 const googleApiKey =
   env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
 
 export const openai = createOpenAI({
-  apiKey: env.OPENAI_API_KEY || "sk-dummy-key-for-initialization",
+  apiKey: openaiApiKey || "sk-dummy-key-for-initialization",
 });
 
 export const anthropic = createAnthropic({
@@ -88,7 +91,7 @@ export function getAllowedModels(): ModelDescriptor[] {
 
 export function getModelInstance(modelId?: string) {
   // If user has only Google or only Anthropic configured, adapt automatically
-  const hasOpenAi = Boolean(env.OPENAI_API_KEY && env.OPENAI_API_KEY.startsWith("sk-"));
+  const hasOpenAi = Boolean(openaiApiKey && openaiApiKey.startsWith("sk-"));
   const hasGoogle = Boolean(googleApiKey && googleApiKey.length > 5);
   const hasAnthropic = Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-"));
 

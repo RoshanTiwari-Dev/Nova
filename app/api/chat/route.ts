@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
 
     const hasApiKey = Boolean(
       (env.OPENAI_API_KEY && env.OPENAI_API_KEY.startsWith("sk-")) ||
+      (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith("sk-")) ||
       (env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-")) ||
       (env.GOOGLE_GENERATIVE_AI_API_KEY && env.GOOGLE_GENERATIVE_AI_API_KEY.length > 5) ||
       (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5)

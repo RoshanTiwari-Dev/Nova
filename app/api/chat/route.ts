@@ -6,6 +6,7 @@ import { buildSystemPrompt } from "@/lib/ai/prompts";
 import { webSearchTool } from "@/lib/ai/tools";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { saveMessage, getMessages, updateConversation, getUserById } from "@/lib/db/queries";
+import { env } from "@/lib/env";
 import { z } from "zod";
 
 export const maxDuration = 60;
@@ -76,6 +77,92 @@ export async function POST(req: NextRequest) {
       customInstructions: prefs.customInstructions,
       memory: prefs.memory ? "Active workspace: NOVA AI Coding Platform." : undefined,
     });
+
+    const hasApiKey = Boolean(
+      (env.OPENAI_API_KEY && env.OPENAI_API_KEY.startsWith("sk-")) ||
+      env.ANTHROPIC_API_KEY ||
+      env.GOOGLE_GENERATIVE_AI_API_KEY
+    );
+
+    if (!hasApiKey) {
+      // Local development fallback streaming response when no API key is yet configured
+      const demoResponse = `Hello! I am **NOVA**, your AI coding companion.
+
+I am currently running in **Local Preview Mode** because no external AI provider API key is set in \`.env.local\`.
+
+Here is a verified sample solution to demonstrate code execution and IDE integration:
+
+\`\`\`python
+# High-performance QuickSort in Python
+def quicksort(arr):
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quicksort(left) + middle + quicksort(right)
+
+numbers = [38, 27, 43, 3, 9, 82, 10]
+print("Original array:", numbers)
+print("Sorted array:  ", quicksort(numbers))
+\`\`\`
+
+### Complexity Analysis
+- **Time Complexity**: $\\mathcal{O}(n \\log n)$ average case, $\\mathcal{O}(n^2)$ worst-case.
+- **Auxiliary Space**: $\\mathcal{O}(\\log n)$ recursion stack.
+
+> [!TIP]
+> You can click **"Run"** above to execute this code in the sandbox immediately, or click **"Open in editor"** to view and debug it in the Monaco IDE!
+> To enable live GPT-4o, Claude 3.5, or Gemini streaming, add your \`OPENAI_API_KEY="sk-..."\` to \`.env.local\`.
+
+<!-- SUGGESTIONS: ["Can you optimize this code further?", "Add unit tests for edge cases", "Open this algorithm in the IDE"] -->`;
+
+      const encoder = new TextEncoder();
+      const words = demoResponse.split(" ");
+      let wordIdx = 0;
+
+      const customStream = new ReadableStream({
+        async start(controller) {
+          const interval = setInterval(async () => {
+            if (wordIdx < words.length) {
+              const chunk = (wordIdx > 0 ? " " : "") + words[wordIdx];
+              controller.enqueue(encoder.encode(`0:${JSON.stringify(chunk)}\n`));
+              wordIdx++;
+            } else {
+              clearInterval(interval);
+              controller.close();
+
+              try {
+                await saveMessage({
+                  conversationId,
+                  role: "assistant",
+                  parts: [{ type: "text", text: demoResponse }],
+                  model: "preview-model",
+                  inputTokens: 50,
+                  outputTokens: 250,
+                });
+                if (latestUserMsg?.content) {
+                  const shortTitle =
+                    latestUserMsg.content.slice(0, 35).replace(/[\r\n]+/g, " ").trim() +
+                    (latestUserMsg.content.length > 35 ? "..." : "");
+                  await updateConversation(conversationId, userId, { title: shortTitle });
+                }
+              } catch (saveErr) {
+                // ignore
+              }
+            }
+          }, 35);
+        },
+      });
+
+      return new Response(customStream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "X-Vercel-AI-Data-Stream": "v1",
+        },
+      });
+    }
 
     const modelInstance = getModelInstance(model);
 

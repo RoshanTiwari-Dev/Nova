@@ -200,6 +200,17 @@ export function ChatView({
               } catch {
                 assistantText += line.slice(2);
               }
+            } else if (line.startsWith("3:")) {
+              try {
+                const errMsg = JSON.parse(line.slice(2));
+                if (errMsg.includes("no credits remaining") || errMsg.includes("billing")) {
+                  assistantText = `⚠️ **OpenAI Billing Notice:** Your OpenAI API account has no credits remaining ($0 balance).\n\nTo use OpenAI, add \$5 credit at [platform.openai.com/settings/organization/billing/](https://platform.openai.com/settings/organization/billing/).\n\n> [!TIP]\n> **Want it 100% free?** Get a free Google Gemini key from [aistudio.google.com](https://aistudio.google.com/) and add it to \`.env.local\` as \`GOOGLE_GENERATIVE_AI_API_KEY\`.`;
+                } else {
+                  assistantText = `⚠️ **AI Service Notice:** ${errMsg}`;
+                }
+              } catch {
+                assistantText = `⚠️ **AI Service Notice:** ${line.slice(2)}`;
+              }
             } else if (line.trim() && !line.startsWith("d:") && !line.startsWith("e:")) {
               assistantText += line;
             }

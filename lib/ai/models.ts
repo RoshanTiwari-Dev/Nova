@@ -39,18 +39,25 @@ export interface ModelDescriptor {
 
 export const AVAILABLE_MODELS: ModelDescriptor[] = [
   {
-    id: "llama-3.3-70b-versatile",
-    name: "Llama 3.3 70B (Groq Free)",
+    id: "openai/gpt-oss-120b",
+    name: "GPT OSS 120B (Groq Free)",
     provider: "groq",
     tier: "smart",
-    description: "Ultra-fast, state-of-the-art open model with instant responses",
+    description: "Flagship 120B open reasoning model with ultra-fast inference",
   },
   {
-    id: "llama-3.1-8b-instant",
-    name: "Llama 3.1 8B (Groq Free)",
+    id: "openai/gpt-oss-20b",
+    name: "GPT OSS 20B (Groq Free)",
     provider: "groq",
     tier: "fast",
-    description: "Lightning-fast inference at 500+ tokens per second",
+    description: "Lightning-fast instant conversational model at 800+ tokens/sec",
+  },
+  {
+    id: "qwen/qwen3.8-27b",
+    name: "Qwen 3.8 27B (Groq Free)",
+    provider: "groq",
+    tier: "smart",
+    description: "Advanced coding and multilingual conversational model",
   },
   {
     id: "gpt-4o-mini",
@@ -117,10 +124,10 @@ export function getModelInstance(modelId?: string) {
   const hasGoogle = Boolean(googleApiKey && googleApiKey.length > 5);
   const hasAnthropic = Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-"));
 
-  let targetId = modelId || env.AI_MODEL_FAST || "gpt-4o-mini";
+  let targetId = modelId || env.AI_MODEL_SMART || (hasGroq ? "openai/gpt-oss-120b" : "gpt-4o-mini");
 
-  if (hasGroq && (!modelId || modelId.startsWith("gpt") || modelId.startsWith("claude"))) {
-    targetId = "llama-3.3-70b-versatile";
+  if (hasGroq && (!modelId || modelId.startsWith("gpt-4") || modelId.startsWith("claude") || modelId.startsWith("llama"))) {
+    targetId = "openai/gpt-oss-120b";
   } else if (!hasOpenAi && hasGoogle && !targetId.includes("gemini")) {
     targetId = "gemini-1.5-flash";
   } else if (!hasOpenAi && hasAnthropic && !targetId.includes("claude")) {
@@ -143,9 +150,11 @@ export function getModelInstance(modelId?: string) {
 }
 
 export function getSmartModel() {
-  return getModelInstance(env.AI_MODEL_SMART || "gpt-4o");
+  const hasGroq = Boolean(groqApiKey && groqApiKey.startsWith("gsk_"));
+  return getModelInstance(hasGroq ? "openai/gpt-oss-120b" : (env.AI_MODEL_SMART || "gpt-4o"));
 }
 
 export function getFastModel() {
-  return getModelInstance(env.AI_MODEL_FAST || "gpt-4o-mini");
+  const hasGroq = Boolean(groqApiKey && groqApiKey.startsWith("gsk_"));
+  return getModelInstance(hasGroq ? "openai/gpt-oss-20b" : (env.AI_MODEL_FAST || "gpt-4o-mini"));
 }

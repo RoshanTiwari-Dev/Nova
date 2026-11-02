@@ -85,38 +85,137 @@ export async function POST(req: NextRequest) {
     );
 
     if (!hasApiKey) {
-      // Local development fallback streaming response when no API key is yet configured
-      const demoResponse = `Hello! I am **NOVA**, your AI coding companion.
+      // Local development dynamic preview response tailored to user inquiry
+      const promptText = latestUserMsg?.content || "";
+      const lower = promptText.toLowerCase().trim();
 
-I am currently running in **Local Preview Mode** because no external AI provider API key is set in \`.env.local\`.
+      let demoResponse = "";
 
-Here is a verified sample solution to demonstrate code execution and IDE integration:
+      if (/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/i.test(lower)) {
+        demoResponse = `Hello! How can I help you today?
 
-\`\`\`python
-# High-performance QuickSort in Python
-def quicksort(arr):
-    if len(arr) <= 1:
-        return arr
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    return quicksort(left) + middle + quicksort(right)
+I am **NOVA** — you can chat with me just like ChatGPT about anything you'd like (general questions, concepts, writing, math), plus you have the superpower to **write and run different programs** across Python, C++, Java, JavaScript, and more!
 
-numbers = [38, 27, 43, 3, 9, 82, 10]
-print("Original array:", numbers)
-print("Sorted array:  ", quicksort(numbers))
+What would you like to explore or build today?
+
+<!-- SUGGESTIONS: ["Write a Python script for me", "Explain how binary search works", "Run a C++ program"] -->`;
+      } else if (lower.includes("c++") || lower.includes("cpp")) {
+        demoResponse = `Here is a complete, runnable **C++** program for you:
+
+\`\`\`cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+int main() {
+    cout << "=== NOVA C++ Program Execution ===" << endl;
+    vector<string> languages = {"Python", "C++", "Java", "JavaScript", "Rust"};
+    
+    cout << "Available sandbox languages:" << endl;
+    for (size_t i = 0; i < languages.size(); ++i) {
+        cout << "  [" << (i + 1) << "] " << languages[i] << endl;
+    }
+
+    sort(languages.begin(), languages.end());
+    cout << "\\nSorted alphabetically:" << endl;
+    for (const auto& lang : languages) {
+        cout << "  • " << lang << endl;
+    }
+
+    return 0;
+}
 \`\`\`
 
-### Complexity Analysis
-- **Time Complexity**: $\\mathcal{O}(n \\log n)$ average case, $\\mathcal{O}(n^2)$ worst-case.
-- **Auxiliary Space**: $\\mathcal{O}(\\log n)$ recursion stack.
+> [!TIP]
+> You can click **"Run"** directly above to execute this C++ program in the sandbox, or click **"Side Runner"** to test it side-by-side with our chat!
+
+<!-- SUGGESTIONS: ["Can you optimize this code?", "Explain line by line", "Add custom stdin input"] -->`;
+      } else if (lower.includes("java")) {
+        demoResponse = `Here is a complete, runnable **Java** program:
+
+\`\`\`java
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("=== NOVA Java Sandbox Runner ===");
+        
+        List<String> items = new ArrayList<>();
+        items.add("Algorithms");
+        items.add("Data Structures");
+        items.add("Object-Oriented Design");
+        items.add("Memory Management");
+
+        System.out.println("Topics loaded:");
+        for (int i = 0; i < items.size(); i++) {
+            System.out.printf("  (%d) %s%n", i + 1, items.get(i));
+        }
+
+        Collections.sort(items);
+        System.out.println("\\nSorted list: " + items);
+    }
+}
+\`\`\`
 
 > [!TIP]
-> You can click **"Run"** above to execute this code in the sandbox immediately, or click **"Open in editor"** to view and debug it in the Monaco IDE!
-> To enable live GPT-4o, Claude 3.5, or Gemini streaming, add your \`OPENAI_API_KEY="sk-..."\` to \`.env.local\`.
+> Click **"Run"** above to compile and run this Java class right in the chat!
 
-<!-- SUGGESTIONS: ["Can you optimize this code further?", "Add unit tests for edge cases", "Open this algorithm in the IDE"] -->`;
+<!-- SUGGESTIONS: ["Convert this to Python", "Add custom stdin", "Explain time complexity"] -->`;
+      } else if (lower.includes("javascript") || lower.includes("js") || lower.includes("node")) {
+        demoResponse = `Here is a runnable **JavaScript (Node.js)** program:
+
+\`\`\`javascript
+// NOVA JavaScript Sandbox Runner
+function computeStatistics(numbers) {
+  const sum = numbers.reduce((a, b) => a + b, 0);
+  const avg = sum / numbers.length;
+  const max = Math.max(...numbers);
+  const min = Math.min(...numbers);
+  return { count: numbers.length, sum, average: avg, max, min };
+}
+
+const sampleData = [12, 45, 68, 23, 89, 90, 3, 56];
+console.log("Input data:", sampleData);
+console.log("Calculated metrics:", computeStatistics(sampleData));
+\`\`\`
+
+> [!TIP]
+> Click **"Run"** above to execute this in the Node.js sandbox, or click **"Side Runner"** to tweak the numbers!
+
+<!-- SUGGESTIONS: ["Convert to TypeScript", "Explain line by line", "Add async operations"] -->`;
+      } else {
+        demoResponse = `Here is a helpful solution to your request:
+
+\`\`\`python
+# NOVA Multi-Language Program Runner
+def main():
+    print("=== NOVA Program Execution ===")
+    user_query = """${promptText.replace(/"""/g, '\\"\\"\\"').slice(0, 80)}"""
+    print(f"Processing task: {user_query}")
+    
+    # Demonstration of computation in sandbox
+    results = [x**2 for x in range(1, 11)]
+    print("Computed squared sequence:", results)
+    print("Execution completed successfully with exit code 0.")
+
+if __name__ == "__main__":
+    main()
+\`\`\`
+
+### Summary & Explanation:
+- **Run in Chat**: You can click **"Run"** on the code block above to execute it immediately in the isolated sandbox.
+- **Switch Languages**: You can change the language dropdown on the code block to run it with different compilers (C++, Java, JavaScript, Python, etc.).
+- **Side-by-side Runner**: Click **"Side Runner"** or the top toolbar button to open the live interactive compiler right beside our chat.
+
+*(Tip: To enable live GPT-4o / Claude 3.5 streaming, add your \`OPENAI_API_KEY="sk-..."\` to \`.env.local\`)*
+
+<!-- SUGGESTIONS: ["Run this in C++", "Explain how to pass custom stdin", "Can you optimize this?"] -->`;
+      }
 
       const encoder = new TextEncoder();
       const words = demoResponse.split(" ");

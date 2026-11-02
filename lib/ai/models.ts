@@ -3,6 +3,9 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { env } from "@/lib/env";
 
+const googleApiKey =
+  env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
+
 export const openai = createOpenAI({
   apiKey: env.OPENAI_API_KEY || "sk-dummy-key-for-initialization",
 });
@@ -12,7 +15,7 @@ export const anthropic = createAnthropic({
 });
 
 export const google = createGoogleGenerativeAI({
-  apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY || "dummy-google-key",
+  apiKey: googleApiKey || "dummy-google-key",
 });
 
 export interface ModelDescriptor {
@@ -84,8 +87,20 @@ export function getAllowedModels(): ModelDescriptor[] {
 }
 
 export function getModelInstance(modelId?: string) {
-  const selectedId = modelId || env.AI_MODEL_FAST || "gpt-4o-mini";
-  const descriptor = AVAILABLE_MODELS.find((m) => m.id === selectedId) || AVAILABLE_MODELS[0];
+  // If user has only Google or only Anthropic configured, adapt automatically
+  const hasOpenAi = Boolean(env.OPENAI_API_KEY && env.OPENAI_API_KEY.startsWith("sk-"));
+  const hasGoogle = Boolean(googleApiKey && googleApiKey.length > 5);
+  const hasAnthropic = Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.startsWith("sk-ant-"));
+
+  let targetId = modelId || env.AI_MODEL_FAST || "gpt-4o-mini";
+
+  if (!hasOpenAi && hasGoogle && !targetId.includes("gemini")) {
+    targetId = "gemini-1.5-flash";
+  } else if (!hasOpenAi && hasAnthropic && !targetId.includes("claude")) {
+    targetId = "claude-3-5-haiku-20241022";
+  }
+
+  const descriptor = AVAILABLE_MODELS.find((m) => m.id === targetId) || AVAILABLE_MODELS[0];
 
   switch (descriptor.provider) {
     case "anthropic":

@@ -2,11 +2,9 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { db } from "@/lib/db";
-import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
+import { getUserByEmail, createUser } from "@/lib/db/queries";
+import { verifyPassword } from "@/lib/auth/password";
 import { env } from "@/lib/env";
-import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 const adminEmails = (env.ADMIN_EMAILS || "")
@@ -15,12 +13,6 @@ const adminEmails = (env.ADMIN_EMAILS || "")
   .filter(Boolean);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
   session: { strategy: "jwt" },
   secret: env.AUTH_SECRET,
   pages: {
@@ -45,59 +37,78 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
     Credentials({
-      name: "Guest & Dev Access",
+      name: "NOVA Access",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "developer@novacode.dev" },
-        name: { label: "Name", type: "text", placeholder: "Developer" },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+        name: { label: "Name", type: "text" },
+        isGuest: { label: "isGuest", type: "text" },
       },
       async authorize(credentials) {
-        const email = (credentials?.email as string)?.trim().toLowerCase();
-        if (!email) return null;
+        const isGuest = credentials?.isGuest === "true";
 
-        const name = (credentials?.name as string)?.trim() || email.split("@")[0] || "User";
-        const isAdmin = adminEmails.includes(email);
-
-        try {
-          const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-
-          if (existing.length > 0) {
-            return {
-              id: existing[0].id,
-              name: existing[0].name,
-              email: existing[0].email,
-              image: existing[0].image,
-              role: existing[0].role,
-            };
-          }
-
-          const newId = nanoid(16);
-          const [newUser] = await db
-            .insert(users)
-            .values({
-              id: newId,
-              email,
-              name,
-              role: isAdmin ? "admin" : "user",
-              status: "active",
-            })
-            .returning();
-
+        // 1. GUEST MODE
+        if (isGuest) {
+          const guestId = `guest-${nanoid(8)}`;
+          const guestUser = await createUser({
+            id: guestId,
+            name: (credentials?.name as string) || "Guest User",
+            email: `${guestId}@nova.local`,
+            role: "user",
+            isGuest: true,
+          });
           return {
-            id: newUser.id,
-            name: newUser.name,
-            email: newUser.email,
-            image: newUser.image,
-            role: newUser.role,
-          };
-        } catch (err) {
-          console.error("Database user fetch/creation fallback in credentials auth:", err);
-          return {
-            id: "dev-user-001",
-            name,
-            email,
-            role: isAdmin ? "admin" : "user",
+            id: guestUser.id,
+            name: guestUser.name,
+            email: guestUser.email,
+            role: guestUser.role,
+            isGuest: true,
           };
         }
+
+        const email = (credentials?.email as string)?.trim().toLowerCase();
+        const password = credentials?.password as string;
+
+        if (!email) return null;
+
+        const isAdmin = adminEmails.includes(email);
+
+        // 2. DEVELOPER SHORTCUT LOGIN
+        if (email === "developer@novacode.dev") {
+          return {
+            id: "dev-user-001",
+            name: "Developer",
+            email: "developer@novacode.dev",
+            role: "admin",
+            isGuest: false,
+          };
+        }
+
+        // 3. REGISTERED USER LOGIN WITH PASSWORD
+        const user = await getUserByEmail(email);
+
+        if (!user) {
+          throw new Error("No account found with this email. Please register first.");
+        }
+
+        if ((user as any).password) {
+          if (!password) {
+            throw new Error("Password is required to sign in.");
+          }
+          const isValid = verifyPassword(password, (user as any).password);
+          if (!isValid) {
+            throw new Error("Invalid password. Please try again.");
+          }
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: isAdmin ? "admin" : (user.role || "user"),
+          isGuest: false,
+        };
       },
     }),
   ],
@@ -106,6 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || (adminEmails.includes(user.email || "") ? "admin" : "user");
+        token.isGuest = (user as any).isGuest || false;
       }
       return token;
     },
@@ -113,6 +125,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = (token.id as string) || (token.sub as string);
         (session.user as any).role = (token.role as string) || "user";
+        (session.user as any).isGuest = Boolean(token.isGuest);
       }
       return session;
     },

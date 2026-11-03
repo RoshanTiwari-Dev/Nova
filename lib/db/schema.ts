@@ -22,6 +22,8 @@ export const users = pgTable(
     emailVerified: timestamp("email_verified", { mode: "date" }),
     image: text("image"),
     role: text("role").default("user").notNull(), // 'user' | 'admin'
+    password: text("password"),
+    isGuest: boolean("is_guest").default(false),
     status: text("status").default("active").notNull(),
     preferences: jsonb("preferences").$type<{
       theme?: "light" | "dark" | "system";

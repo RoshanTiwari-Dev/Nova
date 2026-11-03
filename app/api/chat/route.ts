@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
           conversationId,
           role: "user",
           parts: [{ type: "text", text: latestUserMsg.content }],
+          userId,
         });
       } catch {
         // ignore
@@ -371,6 +372,7 @@ Would you like more detailed information about any specific part of this, or sho
             model,
             inputTokens: usage?.promptTokens || 0,
             outputTokens: usage?.completionTokens || 0,
+            userId,
           });
 
           // Check if title generation is needed

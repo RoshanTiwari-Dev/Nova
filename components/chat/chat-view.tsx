@@ -154,6 +154,11 @@ export function ChatView({
     setAttachedFiles([]);
     setIsLoading(true);
 
+    if (typeof window !== "undefined" && window.location.pathname === "/chat") {
+      window.history.replaceState(null, "", `/chat/${conversationId}`);
+      window.dispatchEvent(new CustomEvent("nova:conversation-updated"));
+    }
+
     const controller = new AbortController();
     setAbortController(controller);
 
@@ -241,6 +246,10 @@ export function ChatView({
               msg.id === assistantId ? { ...msg, content: assistantText } : msg
             )
           );
+        }
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("nova:conversation-updated"));
         }
       }
     } catch (err: any) {

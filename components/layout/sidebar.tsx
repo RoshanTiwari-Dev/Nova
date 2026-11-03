@@ -23,6 +23,7 @@ import {
   Search,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,9 @@ export function Sidebar({ user }: { user?: any }) {
 
   React.useEffect(() => {
     loadConversations();
+    const handleUpdate = () => loadConversations();
+    window.addEventListener("nova:conversation-updated", handleUpdate);
+    return () => window.removeEventListener("nova:conversation-updated", handleUpdate);
   }, [loadConversations, pathname]);
 
   const handleNewChat = async () => {
@@ -65,7 +69,7 @@ export function Sidebar({ user }: { user?: any }) {
       const res = await fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "New Conversation", model: "gpt-4o-mini" }),
+        body: JSON.stringify({ title: "New Conversation", model: "openai/gpt-oss-120b" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -308,17 +312,25 @@ export function Sidebar({ user }: { user?: any }) {
 
       {/* User & Theme Footer */}
       <div className="p-3 border-t border-border bg-card/60 space-y-2">
+        {user?.isGuest && (
+          <div className="px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-500 flex items-center justify-between">
+            <span className="font-medium">Guest Mode</span>
+            <Link href="/login" className="font-semibold underline hover:text-amber-400">
+              Register to Save
+            </Link>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 truncate">
             <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase">
-              {user?.name?.[0] || "D"}
+              {user?.name?.[0] || "U"}
             </div>
             <div className="truncate text-left">
               <p className="text-xs font-semibold truncate leading-none text-foreground">
-                {user?.name || "Developer"}
+                {user?.name || "User"}
               </p>
               <p className="text-[10px] text-muted-foreground truncate leading-none mt-1">
-                {user?.email || "developer@novacode.dev"}
+                {user?.email || "Signed in"}
               </p>
             </div>
           </div>
@@ -330,13 +342,13 @@ export function Sidebar({ user }: { user?: any }) {
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-            <Link
-              href="/api/auth/signout"
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
               className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
               title="Sign out"
             >
               <LogOut className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </div>
